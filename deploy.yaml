@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rspeer-ws
+  labels:
+    app: rspeer-ws
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rspeer-ws
+  template:
+    metadata:
+      labels:
+        app: rspeer-ws
+    spec:
+      containers:
+        - name:  rspeer-ws
+          image: index.docker.io/maddev123/rspeer:rspeer-ws-0.02
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: dockerhubkey
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rspeer-ws
+spec:
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: rspeer-ws
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: rspeer-ws-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/websocket-services: "rspeer-ws"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/send-timeout: "3600"
+spec:
+  rules:
+    - host: dedi.rspeer.org
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: rspeer-ws
+              servicePort: 8080
+          - path: /ws
+            backend:
+              serviceName: rspeer-ws
+              servicePort: 8080
